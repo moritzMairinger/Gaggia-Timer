@@ -10,18 +10,28 @@ int relais = 2;
 
 int counter = 2500;
 int run = false;
+bool stop = false;
 int stepSize = 10;
 
 int currentStateCLK;
 int lastStateCLK;
 
 void IRAM_ATTR buttonPress(){
-  if(!run){
-    run = true;
+  static unsigned long last_interrupt_time = 0;
+  unsigned long interrupt_time = millis();
+  // If interrupts come faster than 200ms, assume it's a bounce and ignore
+  if (interrupt_time - last_interrupt_time > 200) 
+  {
+    if(!run){
+      run = true;
+      Serial.println("start");
+    }
+    else{
+      stop = true;
+      Serial.println("stop");
+    }
   }
-  else{
-
-  }
+  last_interrupt_time = interrupt_time;
 }
 
 void setup() {
@@ -69,7 +79,7 @@ void loop() {
       }
 		} else {
 			// Encoder is rotating CW so increment
-			if(counter < 5000){
+			if(counter < 6000){
         counter += stepSize;
       }
 		}
@@ -88,7 +98,7 @@ void loop() {
 
 void countdown(){
   digitalWrite(relais, HIGH);
-  for(int i = 0; i <= counter ; i ++){
+  for(int i = 0; i <= counter && !stop; i ++){
     sevseg.setNumber(counter - i, 2);
     
     for(int i2 = 0; i2 < 10; i2++){
@@ -101,4 +111,5 @@ void countdown(){
    //wait shortly to switch the relay off to avoid a problem with the relay emulating a button press
    delay(10);
    run = false;
+   stop = false;
 }
